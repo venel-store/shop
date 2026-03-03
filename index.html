@@ -111,6 +111,15 @@
         </div>
     </nav>
 
+    <div class="mx-2 mt-2">
+        <div class="bg-gradient-to-r from-pastel-300 to-pastel-400 rounded-full text-white py-1.5 px-5 text-sm shadow-md flex items-center">
+            <i class="fa-solid fa-bullhorn mr-3 animate-pulse"></i>
+            <marquee id="recent-purchases-marquee" behavior="scroll" direction="left" class="font-medium tracking-wide">
+                <span id="marquee-text">ยินดีต้อนรับสู่ร้านค้าของเรา! แหล่งรวมสินค้าราคาถูก จัดส่งอัตโนมัติ 24 ชั่วโมง</span>
+            </marquee>
+        </div>
+    </div>
+
     <div id="sidebar-backdrop" onclick="closeMenu()" class="fixed inset-0 bg-black/20 z-40 hidden backdrop-blur-sm transition-opacity"></div>
 
     <div id="sidebar" class="fixed inset-y-0 right-0 w-72 glass shadow-2xl transform translate-x-full transition-transform duration-300 z-50 rounded-l-[2rem]">
@@ -125,8 +134,12 @@
                 <i class="fa-solid fa-house w-6 text-pastel-400"></i> หน้าหลัก
             </button>
             
+            <button onclick="navigateAuth('inbox')" class="text-left px-5 py-3.5 rounded-[1.5rem] hover:bg-white transition text-gray-700 font-medium shadow-sm border border-transparent hover:border-pastel-100">
+                <i class="fa-solid fa-envelope-open-text w-6 text-pastel-400"></i> กล่องข้อความ (รับของ)
+            </button>
+            
             <button onclick="navigateAuth('history')" class="text-left px-5 py-3.5 rounded-[1.5rem] hover:bg-white transition text-gray-700 font-medium shadow-sm border border-transparent hover:border-pastel-100">
-                <i class="fa-solid fa-clock-rotate-left w-6 text-pastel-400"></i> ประวัติการซื้อ & สินค้า
+                <i class="fa-solid fa-clock-rotate-left w-6 text-pastel-400"></i> ประวัติการสั่งซื้อ
             </button>
             
             <button onclick="navigateAuth('products')" class="text-left px-5 py-3.5 rounded-[1.5rem] hover:bg-white transition text-gray-700 font-medium shadow-sm border border-transparent hover:border-pastel-100">
@@ -180,9 +193,16 @@
             <div id="all-products-container" class="space-y-8"></div>
         </div>
 
+        <div id="view-inbox" class="view-section hidden max-w-3xl mx-auto">
+            <h2 class="text-2xl font-bold bg-gradient-to-r from-pastel-500 to-pastel-400 text-gradient mb-6 px-2 text-center">
+                <i class="fa-solid fa-envelope-open-text mr-2"></i> กล่องข้อความ (รับสินค้า)
+            </h2>
+            <div id="inbox-list" class="space-y-4"></div>
+        </div>
+
         <div id="view-history" class="view-section hidden max-w-3xl mx-auto">
             <h2 class="text-2xl font-bold bg-gradient-to-r from-pastel-500 to-pastel-400 text-gradient mb-6 px-2 text-center">
-                <i class="fa-solid fa-clock-rotate-left mr-2"></i> ประวัติการสั่งซื้อ & กล่องข้อความ
+                <i class="fa-solid fa-clock-rotate-left mr-2"></i> ประวัติการสั่งซื้อ
             </h2>
             <div id="history-list" class="space-y-4"></div>
         </div>
@@ -242,7 +262,7 @@
                     <div class="bg-white/60 p-5 rounded-[2rem] border-2 border-white">
                         <h3 class="font-bold text-pastel-600 mb-4"><i class="fa-solid fa-plus-circle mr-2"></i> เพิ่มสินค้า</h3>
                         <form onsubmit="saveManualProduct(event)" class="space-y-4">
-                            <select id="man-cat" class="w-full p-3 rounded-[1rem] outline-none shadow-sm">
+                            <select id="man-cat" class="w-full p-3 rounded-[1rem] outline-none shadow-sm text-gray-600">
                                 <option value="แอพพรีเมียม">แอพพรีเมียม</option>
                                 <option value="เติมเกม">เติมเกม</option>
                                 <option value="OTP">OTP</option>
@@ -339,7 +359,7 @@
     </div>
 
     <script>
-        // *** ใส่ลิงก์ที่คุณเพิ่งให้มา ***
+        // *** วาง URL ของ Apps Script ที่นี่ ***
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzj6xtdhv0ZJzRBpm-O2rkEY2kYR6B2eWMd78oKa4Ck4AlAG9ofdjgOvTMKBfgM0Y3x/exec";
         
         let currentUser = JSON.parse(localStorage.getItem('user_session')) || null;
@@ -350,6 +370,23 @@
         let sliderIdx = 0;
         
         document.getElementById('copy-year').innerText = new Date().getFullYear();
+
+        // ------------------ Date formatting (Relative Time) ------------------
+        function timeAgo(dateStr) {
+            const past = new Date(dateStr).getTime();
+            const now = new Date().getTime();
+            const diffMs = now - past;
+            const diffMins = Math.floor(diffMs / 60000);
+            
+            if (diffMins < 1) return "เมื่อสักครู่";
+            if (diffMins < 60) return `${diffMins} นาทีที่แล้ว`;
+            
+            const diffHrs = Math.floor(diffMins / 60);
+            if (diffHrs < 24) return `${diffHrs} ชั่วโมงที่แล้ว`;
+            
+            const diffDays = Math.floor(diffHrs / 24);
+            return `${diffDays} วันที่แล้ว`;
+        }
 
         // ------------------ Fetch API ------------------
         async function fetchGAS(payload) {
@@ -374,7 +411,19 @@
                 applySettings(); 
             }
             await fetchAndRenderProducts();
+            await fetchRecentGlobalPurchases(); // โหลดประวัติใส่ป้ายเลื่อน
         };
+
+        // ------------------ Fetch Marquee ------------------
+        async function fetchRecentGlobalPurchases() {
+            const res = await fetchGAS({ action: 'getRecentGlobalPurchases' });
+            if(res.status === 'success' && res.data.length > 0) {
+                let text = res.data.map(item => `ผู้ใช้ ${item.user} สั่งซื้อ ${item.product} (${timeAgo(item.time)})`).join("  |  ");
+                document.getElementById('marquee-text').innerText = text;
+            } else {
+                document.getElementById('marquee-text').innerText = "ยินดีต้อนรับสู่ร้านค้าของเรา! แหล่งรวมสินค้าราคาถูก จัดส่งอัตโนมัติ 24 ชั่วโมง";
+            }
+        }
 
         // ------------------ UI & Navigation ------------------
         function toggleMenu() { 
@@ -395,6 +444,7 @@
         function navigate(id) { 
             closeMenu(); 
             showView(id); 
+            if(id === 'inbox') fetchInbox(); 
             if(id === 'history') fetchHistory(); 
             if(id === 'products') renderAllProductsPage(); 
         }
@@ -618,6 +668,7 @@
                     localStorage.setItem('user_session', JSON.stringify(currentUser)); 
                     updateUI(); 
                     fetchAndRenderProducts(); 
+                    fetchRecentGlobalPurchases(); // รีเฟรชป้ายเลื่อน
                     Swal.fire('สำเร็จ', res.message, 'success'); 
                 } else {
                     Swal.fire('ผิดพลาด', res.message, 'error'); 
@@ -625,10 +676,10 @@
             } 
         }
 
-        // ------------------ Purchase History (Inbox) ------------------
-        async function fetchHistory() { 
-            const box = document.getElementById('history-list'); 
-            box.innerHTML = '<div class="text-center py-10">กำลังโหลดประวัติการสั่งซื้อ...</div>'; 
+        // ------------------ Inbox Fetching ------------------
+        async function fetchInbox() { 
+            const box = document.getElementById('inbox-list'); 
+            box.innerHTML = '<div class="text-center py-10">กำลังโหลดกล่องข้อความ...</div>'; 
             
             const res = await fetchGAS({ action: 'getInbox', userid: currentUser.userid }); 
             box.innerHTML = ''; 
@@ -639,10 +690,36 @@
                     box.innerHTML += `
                         <div class="glass cute-card p-5 bg-white/70 border-2 border-white flex flex-col gap-2">
                             <div class="flex justify-between items-start border-b border-blue-50 pb-2">
-                                <h3 class="font-bold text-gray-800"><i class="fa-solid fa-circle-check text-green-500 mr-2"></i> ${msg.title}</h3>
+                                <h3 class="font-bold text-gray-800"><i class="fa-solid fa-gift text-pastel-400 mr-2"></i> ${msg.title}</h3>
                                 <span class="text-xs text-gray-400">${d.toLocaleString('th-TH')}</span>
                             </div>
                             <div class="text-pastel-600 font-medium bg-pastel-50 p-3 rounded-[1rem] whitespace-pre-line text-sm border border-blue-100">${msg.message}</div>
+                        </div>
+                    `; 
+                }); 
+            } else {
+                box.innerHTML = '<div class="text-center py-10">ยังไม่มีสินค้าในกล่องข้อความค่ะ</div>'; 
+            }
+        }
+
+        // ------------------ Purchase History ------------------
+        async function fetchHistory() { 
+            const box = document.getElementById('history-list'); 
+            box.innerHTML = '<div class="text-center py-10">กำลังโหลดประวัติการสั่งซื้อ...</div>'; 
+            
+            const res = await fetchGAS({ action: 'getHistory', userid: currentUser.userid }); 
+            box.innerHTML = ''; 
+            
+            if(res.status === 'success' && res.data.length > 0) {
+                res.data.forEach(item => { 
+                    const d = new Date(item.time); 
+                    box.innerHTML += `
+                        <div class="glass cute-card p-4 bg-white/70 border-2 border-white flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold text-gray-800"><i class="fa-solid fa-circle-check text-green-500 mr-2"></i> ${item.product}</h3>
+                                <span class="text-xs text-gray-400 ml-6">${d.toLocaleString('th-TH')}</span>
+                            </div>
+                            <div class="text-pastel-600 font-bold text-lg">${item.price} ฿</div>
                         </div>
                     `; 
                 }); 
