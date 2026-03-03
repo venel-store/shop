@@ -15,13 +15,13 @@
                     fontFamily: { sans: ['Kanit', 'sans-serif'] },
                     colors: { 
                         pastel: { 
-                            50: '#f0f8ff',  /* aliceblue */
-                            100: '#e0f2fe', /* light sky blue */
+                            50: '#f0f8ff',  
+                            100: '#e0f2fe', 
                             200: '#bae6fd',
                             300: '#7dd3fc',
-                            400: '#38bdf8', /* Main Blue */
-                            500: '#0ea5e9', /* Hover Blue */
-                            600: '#0284c7'  /* Text Blue */
+                            400: '#38bdf8', 
+                            500: '#0ea5e9', 
+                            600: '#0284c7'  
                         } 
                     }
                 }
@@ -60,7 +60,28 @@
             -webkit-text-fill-color: transparent; 
         }
         
-        /* SweetAlert Styling - Blue Theme */
+        /* ---------------- CSS ป้ายเลื่อนสมูธ ---------------- */
+        .marquee-wrapper {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+        }
+        .marquee-text {
+            display: inline-block;
+            padding-left: 100%; /* ดันข้อความไปขวาสุดก่อนเริ่ม */
+            animation: marquee 25s linear infinite; /* ความเร็ว 25 วิ */
+        }
+        .marquee-wrapper:hover .marquee-text {
+            animation-play-state: paused; /* เอาเมาส์ชี้แล้วหยุด */
+            cursor: default;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); } /* วิ่งออกซ้ายสุด */
+        }
+        /* ---------------------------------------------------- */
+
         .swal2-popup { 
             border-radius: 2rem !important; 
             background: #f0f8ff !important; 
@@ -112,11 +133,13 @@
     </nav>
 
     <div class="mx-2 mt-2">
-        <div class="bg-gradient-to-r from-pastel-300 to-pastel-400 rounded-full text-white py-1.5 px-5 text-sm shadow-md flex items-center">
-            <i class="fa-solid fa-bullhorn mr-3 animate-pulse"></i>
-            <marquee id="recent-purchases-marquee" behavior="scroll" direction="left" class="font-medium tracking-wide">
-                <span id="marquee-text">ยินดีต้อนรับสู่ร้านค้าของเรา! แหล่งรวมสินค้าราคาถูก จัดส่งอัตโนมัติ 24 ชั่วโมง</span>
-            </marquee>
+        <div class="bg-gradient-to-r from-pastel-300 to-pastel-400 rounded-full text-white py-1.5 px-5 text-sm shadow-md flex items-center overflow-hidden">
+            <i class="fa-solid fa-bullhorn mr-3 animate-pulse flex-shrink-0"></i>
+            <div class="marquee-wrapper">
+                <div class="marquee-text font-medium tracking-wide" id="marquee-text">
+                    กำลังโหลดประวัติการสั่งซื้อล่าสุด...
+                </div>
+            </div>
         </div>
     </div>
 
@@ -133,15 +156,12 @@
             <button onclick="navigate('home')" class="text-left px-5 py-3.5 rounded-[1.5rem] hover:bg-white transition text-gray-700 font-medium shadow-sm border border-transparent hover:border-pastel-100">
                 <i class="fa-solid fa-house w-6 text-pastel-400"></i> หน้าหลัก
             </button>
-            
             <button onclick="navigateAuth('inbox')" class="text-left px-5 py-3.5 rounded-[1.5rem] hover:bg-white transition text-gray-700 font-medium shadow-sm border border-transparent hover:border-pastel-100">
                 <i class="fa-solid fa-envelope-open-text w-6 text-pastel-400"></i> กล่องข้อความ (รับของ)
             </button>
-            
             <button onclick="navigateAuth('history')" class="text-left px-5 py-3.5 rounded-[1.5rem] hover:bg-white transition text-gray-700 font-medium shadow-sm border border-transparent hover:border-pastel-100">
                 <i class="fa-solid fa-clock-rotate-left w-6 text-pastel-400"></i> ประวัติการสั่งซื้อ
             </button>
-            
             <button onclick="navigateAuth('products')" class="text-left px-5 py-3.5 rounded-[1.5rem] hover:bg-white transition text-gray-700 font-medium shadow-sm border border-transparent hover:border-pastel-100">
                 <i class="fa-solid fa-gift w-6 text-pastel-400"></i> สินค้าทั้งหมด
             </button>
@@ -258,9 +278,8 @@
 
             <div id="admin-tab-manage" class="admin-content hidden glass cute-card p-8">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    
                     <div class="bg-white/60 p-5 rounded-[2rem] border-2 border-white">
-                        <h3 class="font-bold text-pastel-600 mb-4"><i class="fa-solid fa-plus-circle mr-2"></i> เพิ่มสินค้า</h3>
+                        <h3 class="font-bold text-pastel-600 mb-4"><i class="fa-solid fa-plus-circle mr-2"></i> เพิ่มสินค้าเอง</h3>
                         <form onsubmit="saveManualProduct(event)" class="space-y-4">
                             <select id="man-cat" class="w-full p-3 rounded-[1rem] outline-none shadow-sm text-gray-600">
                                 <option value="แอพพรีเมียม">แอพพรีเมียม</option>
@@ -285,7 +304,6 @@
                         </div>
                         <div id="admin-product-list" class="space-y-3 max-h-[400px] overflow-y-auto hide-scrollbar"></div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -411,14 +429,14 @@
                 applySettings(); 
             }
             await fetchAndRenderProducts();
-            await fetchRecentGlobalPurchases(); // โหลดประวัติใส่ป้ายเลื่อน
+            await fetchRecentGlobalPurchases(); 
         };
 
         // ------------------ Fetch Marquee ------------------
         async function fetchRecentGlobalPurchases() {
             const res = await fetchGAS({ action: 'getRecentGlobalPurchases' });
             if(res.status === 'success' && res.data.length > 0) {
-                let text = res.data.map(item => `ผู้ใช้ ${item.user} สั่งซื้อ ${item.product} (${timeAgo(item.time)})`).join("  |  ");
+                let text = res.data.map(item => `ลูกค้า ${item.user} สั่งซื้อ ${item.product} (${timeAgo(item.time)})`).join("  |  ");
                 document.getElementById('marquee-text').innerText = text;
             } else {
                 document.getElementById('marquee-text').innerText = "ยินดีต้อนรับสู่ร้านค้าของเรา! แหล่งรวมสินค้าราคาถูก จัดส่งอัตโนมัติ 24 ชั่วโมง";
@@ -668,7 +686,7 @@
                     localStorage.setItem('user_session', JSON.stringify(currentUser)); 
                     updateUI(); 
                     fetchAndRenderProducts(); 
-                    fetchRecentGlobalPurchases(); // รีเฟรชป้ายเลื่อน
+                    fetchRecentGlobalPurchases(); 
                     Swal.fire('สำเร็จ', res.message, 'success'); 
                 } else {
                     Swal.fire('ผิดพลาด', res.message, 'error'); 
